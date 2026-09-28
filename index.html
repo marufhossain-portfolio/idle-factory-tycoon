@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Idle Factory Tycoon</title>
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%AD%3C/text%3E%3C/svg%3E" />
+<style>
+/* ============ RESET / BASE ============ */
+:root{
+  --bg:#0b0f1a; --bg2:#111726; --card:#1a2236; --card2:#232c46;
+  --border:#2b3552; --text:#e8edf7; --muted:#8b96ad; --faint:#5c6a86;
+  --accent:#f5a623; --accent2:#ffd166; --good:#4ade80; --gold:#ffd54f;
+  --bad:#f87171; --blue:#60a5fa;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(1200px 600px at 50% -10%,#1b2540 0%,var(--bg) 60%);
+  color:var(--text); min-height:100vh; overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  user-select:none; -webkit-user-select:none;
+  padding:calc(var(--sat) + 0px) 0 calc(var(--sab) + 12px);
+  touch-action:manipulation;
+}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+button:active{transform:scale(.96)}
+
+/* ============ TOP STATS BAR ============ */
+.topbar{
+  position:sticky; top:0; z-index:20; padding:10px 14px calc(10px + var(--sat));
+  background:rgba(11,15,26,.86); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px;
+}
+.topbar .logo{font-size:22px}
+.topbar .title{flex:1; min-width:0}
+.topbar .title h1{font-size:15px; font-weight:800; letter-spacing:.01em}
+.topbar .title .best{font-size:10.5px; color:var(--faint); font-weight:600}
+.stats{display:flex; flex-direction:column; align-items:flex-end; gap:2px}
+.stats .coins{font-size:20px; font-weight:900; color:var(--gold); font-variant-numeric:tabular-nums}
+.stats .cps{font-size:11px; color:var(--good); font-weight:700; font-variant-numeric:tabular-nums}
+.stats .tapv{font-size:10px; color:var(--muted)}
+
+/* ============ LAYOUT ============ */
+.layout{display:flex; flex-direction:column; gap:12px; padding:12px 12px 80px; max-width:980px; margin:0 auto}
+.col-left{display:flex; flex-direction:column; gap:12px}
+.col-right{display:flex; flex-direction:column; gap:12px}
+@media(min-width:760px){
+  .layout{flex-direction:row; align-items:flex-start}
+  .col-left{flex:1 1 42%; position:sticky; top:76px}
+  .col-right{flex:1 1 58%}
+}
+
+/* ============ PRODUCE BUTTON ============ */
+.produce-wrap{position:relative; display:flex; align-items:center; justify-content:center; padding:6px}
+#produce{
+  width:100%; min-height:220px; border-radius:22px;
+  background:linear-gradient(160deg,#f5a623,#e07b00);
+  box-shadow:0 12px 40px -12px rgba(245,166,35,.55), inset 0 -6px 0 rgba(0,0,0,.18);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  font-weight:900; color:#1a1204; font-size:20px; letter-spacing:.02em;
+  transition:transform .05s; touch-action:manipulation;
+}
+#produce:active{transform:scale(.975)}
+#produce .big{font-size:52px; line-height:1}
+#produce .sub{font-size:13px; opacity:.75; font-weight:700}
+.float{
+  position:absolute; pointer-events:none; font-weight:900; color:var(--gold);
+  font-size:20px; text-shadow:0 2px 8px rgba(0,0,0,.5); z-index:30;
+  animation:floatup .7s ease-out forwards;
+}
+@keyframes floatup{0%{opacity:1; transform:translate(-50%,0) scale(1)}100%{opacity:0; transform:translate(-50%,-70px) scale(1.25)}}
+
+/* ============ PANELS ============ */
+.panel{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px 14px}
+.panel h2{font-size:11px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:10px; font-weight:800}
+
+/* ============ BUILDINGS ============ */
+.building{display:flex; align-items:center; gap:11px; padding:9px; border-radius:12px; margin-bottom:7px; background:var(--bg2); border:1px solid var(--border)}
+.building:last-child{margin-bottom:0}
+.building .ico{font-size:24px; width:38px; height:38px; flex:none; display:grid; place-items:center; background:var(--card2); border-radius:10px}
+.building .info{flex:1; min-width:0}
+.building .info .name{font-size:14px; font-weight:800}
+.building .info .own{font-size:10.5px; color:var(--muted)}
+.building .info .yield{font-size:10.5px; color:var(--good)}
+.building .buy{
+  flex:none; min-width:88px; min-height:48px; padding:8px 12px; border-radius:11px;
+  background:linear-gradient(160deg,#f5a623,#e07b00); color:#1a1204; font-weight:900; font-size:13px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.15;
+}
+.building .buy .cost{font-size:11px; font-weight:800}
+.building .buy.disabled{background:#2a3350; color:var(--faint); box-shadow:none}
+
+/* ============ UPGRADES ============ */
+.upg{display:flex; align-items:center; gap:10px; padding:9px; border-radius:12px; margin-bottom:7px; background:var(--bg2); border:1px solid var(--border)}
+.upg:last-child{margin-bottom:0}
+.upg .ico{font-size:20px; width:36px; height:36px; flex:none; display:grid; place-items:center; background:var(--card2); border-radius:10px}
+.upg .info{flex:1; min-width:0}
+.upg .info .name{font-size:13px; font-weight:800}
+.upg .info .desc{font-size:10.5px; color:var(--muted)}
+.upg .buy{flex:none; min-width:76px; min-height:48px; padding:8px 12px; border-radius:11px; background:linear-gradient(160deg,#60a5fa,#3b82f6); color:#07121f; font-weight:900; font-size:12.5px}
+.upg .buy.owned{background:#1e3a2a; color:var(--good); font-size:11px}
+.upg .buy.disabled{background:#2a3350; color:var(--faint)}
+.upg .buy.disabled.owned{background:#1e3a2a; color:var(--good)}
+
+/* ============ PRESTIGE ============ */
+.prestige{display:flex; flex-direction:column; gap:9px}
+.prestige .row{display:flex; align-items:center; gap:8px; font-size:12.5px}
+.prestige .row .g{color:var(--gold); font-weight:900}
+.prestige button{min-height:48px; border-radius:12px; background:linear-gradient(160deg,#f5a623,#e07b00); color:#1a1204; font-weight:900; font-size:14px}
+.prestige button.disabled{background:#2a3350; color:var(--faint)}
+.reset{min-height:48px; border-radius:12px; background:transparent; border:1px solid var(--bad); color:var(--bad); font-weight:800; font-size:13px}
+
+/* ============ ACHIEVEMENTS ============ */
+.ach{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:11px; margin-bottom:6px; background:var(--bg2); border:1px solid var(--border)}
+.ach:last-child{margin-bottom:0}
+.ach .ico{font-size:18px; width:34px; height:34px; flex:none; display:grid; place-items:center; background:var(--card2); border-radius:9px; filter:grayscale(1); opacity:.45}
+.ach.done .ico{filter:none; opacity:1}
+.ach .info{flex:1; min-width:0}
+.ach .info .name{font-size:12.5px; font-weight:700}
+.ach .info .desc{font-size:10px; color:var(--muted)}
+.ach.done{border-color:#3f6f4f}
+
+/* ============ CRATE ============ */
+.crate{
+  position:fixed; z-index:50; width:74px; height:74px; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#ffe082,#f5a623 60%,#b36b00);
+  box-shadow:0 0 0 6px rgba(245,166,35,.25), 0 10px 34px -6px rgba(245,166,35,.7);
+  display:grid; place-items:center; font-size:34px; cursor:pointer;
+  animation:popin .35s cubic-bezier(.22,1,.36,1);
+}
+@keyframes popin{from{transform:scale(0)}to{transform:scale(1)}}
+.crate .t{position:absolute; bottom:-24px; left:50%; transform:translateX(-50%); font-size:11px; font-weight:900; color:#fff; text-shadow:0 1px 4px #000; white-space:nowrap}
+.crate.flash{animation:flash .3s ease-in-out 2}
+@keyframes flash{50%{box-shadow:0 0 0 14px rgba(245,166,35,.5)}}
+
+/* ============ TOAST ============ */
+#toasts{position:fixed; top:calc(12px + var(--sat)); left:50%; transform:translateX(-50%); z-index:60; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none}
+.toast{background:var(--card2); border:1px solid var(--gold); color:var(--text); padding:10px 16px; border-radius:12px; font-size:13px; font-weight:700; box-shadow:0 8px 24px rgba(0,0,0,.4); animation:toastin .3s ease-out}
+.toast .a{color:var(--gold); margin-right:5px}
+@keyframes toastin{from{opacity:0; transform:translateY(-12px)}to{opacity:1; transform:none}}
+
+/* ============ MODAL ============ */
+.modal-back{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:70; display:grid; place-items:center; padding:20px}
+.modal{background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; max-width:360px; width:100%; text-align:center}
+.modal h2{font-size:18px; margin-bottom:8px}
+.modal p{font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.5}
+.modal .btns{display:flex; gap:10px}
+.modal .btns button{flex:1; min-height:48px; border-radius:12px; font-weight:900; font-size:14px}
+.modal .btns .ok{background:linear-gradient(160deg,#f5a623,#e07b00); color:#1a1204}
+.modal .btns .no{background:#2a3350; color:var(--muted)}
+.modal .bonus{color:var(--gold); font-weight:900; font-size:15px}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<div class="topbar">
+  <div class="logo">🏭</div>
+  <div class="title">
+    <h1>Idle Factory Tycoon</h1>
+    <div class="best" id="best">Best: 0/s</div>
+  </div>
+  <div class="stats">
+    <div class="coins" id="coins">0</div>
+    <div class="cps" id="cps">0/s</div>
+    <div class="tapv" id="tapv">0 per tap</div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ============ LEFT COLUMN: PRODUCTION ============ -->
+  <div class="col-left">
+    <div class="produce-wrap" id="produceWrap">
+      <button id="produce">
+        <span class="big">🔩</span>
+        <span>PRODUCE</span>
+        <span class="sub" id="produceSub">+1 per tap · Space</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ RIGHT COLUMN: SHOP / UPGRADES ============ -->
+  <div class="col-right">
+
+    <div class="panel">
+      <h2>🏗️ Buildings</h2>
+      <div id="shop"></div>
+    </div>
+
+    <div class="panel" id="upgradePanel">
+      <h2>⚡ Upgrades</h2>
+      <div id="upgrades"></div>
+    </div>
+
+    <div class="panel">
+      <h2>👑 Prestige</h2>
+      <div class="prestige">
+        <div class="row">Golden Gears: <span class="g" id="gears">0</span></div>
+        <div class="row">Income bonus: <span class="g" id="gearBonus">+0%</span></div>
+        <div class="row" id="prestigeInfo">Earn <b>1.0M</b> lifetime to prestige</div>
+        <button id="prestigeBtn" class="disabled">Prestige (P)</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🏆 Achievements (<span id="achCount">0</span>/6)</h2>
+      <div id="achievements"></div>
+    </div>
+
+    <button class="reset" id="resetBtn">🗑️ Reset Game</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- welcome-back / confirm modals -->
+<div class="modal-back hidden" id="modalBack">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   CONFIG — all balancing numbers live here (easy to rebalance)
+   ============================================================ */
+var CONFIG = {
+  saveKey: 'idleFactoryTycoon_v1',
+  saveIntervalMs: 5000,        // autosave every 5s
+  offlineCapSeconds: 8*60*60,  // max offline progress = 8 hours
+  baseClick: 1,                // base units per tap
+  costMult: 1.15,              // building cost growth per purchase
+  crate: {
+    minDelay: 60,              // seconds until a crate may appear
+    maxDelay: 120,
+    lifetime: 10,              // seconds to tap it
+    boost: 5,                  // income multiplier
+    boostDuration: 30          // seconds the boost lasts
+  },
+  prestige: {
+    threshold: 1_000_000,      // lifetime coins required to prestige
+    gearDivisor: 1_000_000,    // gears = floor(sqrt(lifetime / divisor))
+    bonusPerGear: 0.02         // +2% income per gear
+  },
+  buildings: [
+    { id:'workshop',  name:'Workshop',      base:15,       inc:0.5,    ico:'🔧' },
+    { id:'assembly',  name:'Assembly Line', base:100,      inc:4,      ico:'⚙️' },
+    { id:'robot',     name:'Robot Arm',     base:800,      inc:25,     ico:'🦾' },
+    { id:'minifac',   name:'Mini Factory',  base:6000,     inc:150,    ico:'🏭' },
+    { id:'warehouse', name:'Warehouse',     base:50000,    inc:1000,   ico:'📦' },
+    { id:'power',     name:'Power Plant',   base:400000,   inc:7500,   ico:'⚡' },
+    { id:'ai',        name:'AI Lab',        base:3_500_000,inc:50000,  ico:'🤖' },
+    { id:'space',     name:'Space Factory', base:30_000_000,inc:400000,ico:'🚀' }
+  ],
+  tapUpgrades: [
+    { id:'tap2',  name:'Strong Hands',  mult:2,  cost:50,      desc:'x2 click power',  ico:'✊' },
+    { id:'tap5',  name:'Power Gloves',  mult:5,  cost:750,     desc:'x5 click power',  ico:'🧤' },
+    { id:'tap10', name:'Robo Fingers',  mult:10, cost:10000,   desc:'x10 click power', ico:'🤖' }
+  ],
+  globalUpgrades: [
+    { id:'g25',  name:'Efficiency Boost', mult:1.25, cost:25000,  desc:'+25% income', ico:'📈' },
+    { id:'g100', name:'Golden Boost',     mult:2,    cost:200000, desc:'+100% income', ico:'💎' }
+  ],
+  achievements: [
+    { id:'firstTap',   name:'First Spark',    desc:'Produce your first unit', ico:'🔩' },
+    { id:'firstBuild', name:'Getting Started',desc:'Buy your first building', ico:'🔧' },
+    { id:'earn1k',     name:'Small Change',   desc:'Earn 1,000 coins (lifetime)', ico:'💰' },
+    { id:'own10',      name:'Foreman',        desc:'Own 10 buildings', ico:'🏗️' },
+    { id:'earn1m',     name:'Tycoon',         desc:'Earn 1,000,000 coins (lifetime)', ico:'💎' },
+    { id:'prestige1',  name:'Reborn',         desc:'Prestige for the first time', ico:'👑' }
+  ]
+};
+
+/* ============================================================
+   STATE + SAVE / LOAD (all localStorage wrapped in try/catch)
+   ============================================================ */
+var state = {
+  coins: 0,
+  lifetime: 0,              // total coins ever earned (for prestige + achievements)
+  buildings: {},            // id -> count
+  tapUpgrades: {},          // id -> true
+  globalUpgrades: {},       // id -> true
+  gears: 0,                 // golden gears (permanent)
+  achievements: {},         // id -> true
+  best: 0,                  // highest coins/sec
+  lastSaved: Date.now()
+};
+var boostUntil = 0;         // timestamp while x5 crate boost is active
+var crate = null;           // { expiresAt } while a crate is on screen
+
+function safeGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function safeSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+function load(){
+  var raw = safeGet(CONFIG.saveKey);
+  if(!raw) return;
+  try{
+    var s = JSON.parse(raw);
+    if(s && typeof s === 'object'){
+      state.coins        = +s.coins || 0;
+      state.lifetime     = +s.lifetime || 0;
+      state.buildings    = s.buildings || {};
+      state.tapUpgrades  = s.tapUpgrades || {};
+      state.globalUpgrades = s.globalUpgrades || {};
+      state.gears        = +s.gears || 0;
+      state.achievements = s.achievements || {};
+      state.best         = +s.best || 0;
+      state.lastSaved    = +s.lastSaved || Date.now();
+    }
+  }catch(e){}
+}
+
+function save(){
+  state.lastSaved = Date.now();
+  safeSet(CONFIG.saveKey, JSON.stringify({
+    coins: state.coins, lifetime: state.lifetime, buildings: state.buildings,
+    tapUpgrades: state.tapUpgrades, globalUpgrades: state.globalUpgrades,
+    gears: state.gears, achievements: state.achievements, best: state.best,
+    lastSaved: state.lastSaved
+  }));
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+
+// number formatting: 1.2K / 3.4M / 5.6B / 7.8T, then scientific
+function fmt(n){
+  n = Math.max(0, Math.floor(n));
+  if(n < 1000) return String(n);
+  var units = ['K','M','B','T'];
+  var v = n, u = -1;
+  while(v >= 1000 && u < units.length - 1){ v /= 1000; u++; }
+  if(u < units.length){
+    return (v >= 100 ? Math.floor(v) : v.toFixed(1)) + units[u];
+  }
+  return n.toExponential(1).replace('e+','e');
+}
+function fmtFull(n){
+  n = Math.max(0, Math.floor(n));
+  if(n < 100000) return n.toLocaleString('en-US');
+  return fmt(n);
+}
+// rate formatter keeps one decimal for small values (e.g. 0.5/s)
+function fmtRate(n){
+  n = Math.max(0, n);
+  if(n < 10) return (Math.floor(n*10)/10).toString();
+  if(n < 1000) return Math.floor(n).toString();
+  return fmt(n);
+}
+
+/* ============================================================
+   DERIVED VALUES
+   ============================================================ */
+function globalMult(){
+  var m = 1;
+  if(state.globalUpgrades.g25)  m *= 1.25;
+  if(state.globalUpgrades.g100) m *= 2;
+  return m;
+}
+function prestigeMult(){ return 1 + state.gears * CONFIG.prestige.bonusPerGear; }
+function boostMult(){ return (Date.now() < boostUntil) ? CONFIG.crate.boost : 1; }
+
+function clickMult(){
+  var m = 1;
+  if(state.tapUpgrades.tap2)  m *= 2;
+  if(state.tapUpgrades.tap5)  m *= 5;
+  if(state.tapUpgrades.tap10) m *= 10;
+  return m;
+}
+
+function buildingCount(){
+  var c = 0;
+  for(var id in state.buildings) c += state.buildings[id];
+  return c;
+}
+
+function incomePerSec(){
+  var s = 0;
+  for(var i=0;i<CONFIG.buildings.length;i++){
+    var b = CONFIG.buildings[i];
+    var n = state.buildings[b.id] || 0;
+    if(n) s += b.inc * n;
+  }
+  return s * globalMult() * prestigeMult() * boostMult();
+}
+
+function clickPower(){
+  return CONFIG.baseClick * clickMult() * globalMult() * prestigeMult();
+}
+
+function buildingCost(b){
+  return Math.floor(b.base * Math.pow(CONFIG.costMult, state.buildings[b.id] || 0));
+}
+
+function potentialGears(){
+  return Math.floor(Math.sqrt(state.lifetime / CONFIG.prestige.gearDivisor));
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+function produce(e){
+  var val = clickPower();
+  state.coins += val;
+  state.lifetime += val;
+  spawnFloat(e, val);
+  unlock('firstTap');
+  checkEarnAch();
+}
+
+function buyBuilding(b){
+  var cost = buildingCost(b);
+  if(state.coins < cost) return;
+  state.coins -= cost;
+  state.buildings[b.id] = (state.buildings[b.id] || 0) + 1;
+  unlock('firstBuild');
+  checkOwnAch();
+  rebuild();
+}
+
+function buyTap(u){
+  if(state.tapUpgrades[u.id]) return;
+  if(state.coins < u.cost) return;
+  state.coins -= u.cost;
+  state.tapUpgrades[u.id] = true;
+  rebuild();
+}
+
+function buyGlobal(u){
+  if(state.globalUpgrades[u.id]) return;
+  if(state.coins < u.cost) return;
+  state.coins -= u.cost;
+  state.globalUpgrades[u.id] = true;
+  rebuild();
+}
+
+function doPrestige(){
+  var g = potentialGears();
+  if(g <= 0) return;
+  state.gears += g;
+  state.coins = 0;
+  state.buildings = {};
+  state.tapUpgrades = {};
+  state.globalUpgrades = {};
+  unlock('prestige1');
+  rebuild();
+  toast('👑', 'Prestige! +' + g + ' Golden Gear' + (g>1?'s':''));
+}
+
+function doReset(){
+  state = {
+    coins:0, lifetime:0, buildings:{}, tapUpgrades:{}, globalUpgrades:{},
+    gears:0, achievements:{}, best:0, lastSaved:Date.now()
+  };
+  boostUntil = 0; crate = null; hideCrate();
+  rebuild();
+  toast('🗑️', 'Game reset');
+}
+
+function onCrateTap(){
+  if(!crate) return;
+  boostUntil = Date.now() + CONFIG.crate.boostDuration * 1000;
+  hideCrate();
+  toast('🎁', 'Golden crate! x' + CONFIG.crate.boost + ' income for ' + CONFIG.crate.boostDuration + 's');
+}
+
+/* ============================================================
+   ACHIEVEMENTS
+   ============================================================ */
+function unlock(id){
+  if(state.achievements[id]) return;
+  var a = CONFIG.achievements.find(function(x){ return x.id === id; });
+  if(!a) return;
+  state.achievements[id] = true;
+  toast('🏆', 'Achievement: ' + a.name);
+  rebuild();
+}
+function checkEarnAch(){
+  if(state.lifetime >= 1000)  unlock('earn1k');
+  if(state.lifetime >= 1000000) unlock('earn1m');
+}
+function checkOwnAch(){
+  if(buildingCount() >= 10) unlock('own10');
+}
+
+/* ============================================================
+   GAME LOOP (rAF + delta time)
+   ============================================================ */
+var last = performance.now();
+var lastSave = 0;
+function loop(now){
+  var dt = Math.min((now - last) / 1000, 0.1); // clamp big gaps
+  last = now;
+
+  var inc = incomePerSec();
+  if(inc > 0){
+    state.coins += inc * dt;
+    state.lifetime += inc * dt;
+  }
+  checkEarnAch();
+
+  // crate spawn / expiry
+  if(!crate && Date.now() >= nextCrateAt){
+    spawnCrate();
+  }
+  if(crate && Date.now() >= crate.expiresAt){
+    hideCrate();
+  }
+
+  // autosave
+  if(now - lastSave >= CONFIG.saveIntervalMs){
+    lastSave = now;
+    save();
+  }
+
+  renderLive(inc);
+  requestAnimationFrame(loop);
+}
+
+/* ============================================================
+   CRATE SPAWNING
+   ============================================================ */
+var nextCrateAt = Date.now() + randRange(CONFIG.crate.minDelay, CONFIG.crate.maxDelay) * 1000;
+function randRange(a,b){ return a + Math.random()*(b-a); }
+
+function spawnCrate(){
+  crate = { expiresAt: Date.now() + CONFIG.crate.lifetime * 1000 };
+  var el = document.createElement('div');
+  el.className = 'crate';
+  el.id = 'crate';
+  el.innerHTML = '🎁<div class="t">TAP!</div>';
+  el.style.left = (8 + Math.random()*72) + '%';
+  el.style.top = (18 + Math.random()*55) + '%';
+  el.addEventListener('pointerdown', function(ev){ ev.preventDefault(); onCrateTap(); });
+  document.body.appendChild(el);
+  // countdown flash
+  el._tick = setInterval(function(){
+    if(!crate){ clearInterval(el._tick); return; }
+    var left = Math.max(0, (crate.expiresAt - Date.now())/1000);
+    el.querySelector('.t').textContent = left.toFixed(1) + 's';
+  }, 100);
+}
+function hideCrate(){
+  crate = null;
+  nextCrateAt = Date.now() + randRange(CONFIG.crate.minDelay, CONFIG.crate.maxDelay) * 1000;
+  var el = $('crate');
+  if(el){ el.remove(); clearInterval(el._tick); }
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function spawnFloat(e, val){
+  var wrap = $('produceWrap');
+  var f = document.createElement('div');
+  f.className = 'float';
+  f.textContent = '+' + fmtFull(val);
+  var rect = wrap.getBoundingClientRect();
+  var x = e && e.clientX ? e.clientX : rect.left + rect.width/2;
+  var y = e && e.clientY ? e.clientY : rect.top + rect.height*0.3;
+  f.style.left = (x - rect.left) + 'px';
+  f.style.top = (y - rect.top) + 'px';
+  wrap.appendChild(f);
+  setTimeout(function(){ f.remove(); }, 700);
+}
+
+function renderLive(inc){
+  $('coins').textContent = fmtFull(state.coins);
+  $('cps').textContent = fmtRate(inc) + '/s';
+  $('tapv').textContent = '+' + fmtFull(clickPower()) + ' per tap';
+  $('produceSub').textContent = '+' + fmtFull(clickPower()) + ' per tap · Space';
+  if(inc > state.best){ state.best = inc; }
+  $('best').textContent = 'Best: ' + fmtFull(state.best) + '/s';
+  updateBuyStates();
+}
+
+function updateBuyStates(){
+  var costNodes = document.querySelectorAll('[data-cost]');
+  for(var i=0;i<costNodes.length;i++){
+    var el = costNodes[i];
+    var cost = +el.getAttribute('data-cost');
+    var owned = el.getAttribute('data-owned') === '1';
+    if(owned){ continue; }
+    el.classList.toggle('disabled', state.coins < cost);
+  }
+}
+
+function rebuild(){
+  // Buildings
+  var shop = $('shop');
+  var sh = '';
+  for(var i=0;i<CONFIG.buildings.length;i++){
+    var b = CONFIG.buildings[i];
+    var n = state.buildings[b.id] || 0;
+    var cost = buildingCost(b);
+    var y = b.inc * (n||0) * globalMult() * prestigeMult();
+    sh += '<div class="building">'
+        +   '<div class="ico">' + b.ico + '</div>'
+        +   '<div class="info"><div class="name">' + b.name + '</div>'
+        +   '<div class="own">Owned: ' + n + '</div>'
+        +   '<div class="yield">' + (n? '+'+fmtRate(y)+'/s' : '+' + fmtRate(b.inc*globalMult()*prestigeMult())+'/s each') + '</div></div>'
+        +   '<button class="buy" data-buy="' + b.id + '"><span class="cost" data-cost="' + cost + '">' + fmtFull(cost) + '</span><span>Buy</span></button>'
+        + '</div>';
+  }
+  shop.innerHTML = sh;
+
+  // Upgrades
+  var up = $('upgrades'), u = '';
+  for(var j=0;j<CONFIG.tapUpgrades.length;j++){
+    var t = CONFIG.tapUpgrades[j];
+    var owned = !!state.tapUpgrades[t.id];
+    u += '<div class="upg"><div class="ico">' + t.ico + '</div>'
+       + '<div class="info"><div class="name">' + t.name + '</div><div class="desc">' + t.desc + '</div></div>'
+       + '<button class="buy' + (owned?' owned':'') + '" data-tap="' + t.id + '" ' + (owned?'data-owned="1"':'data-cost="' + t.cost + '"') + '>'
+       + (owned ? '✓ Owned' : fmtFull(t.cost)) + '</button></div>';
+  }
+  for(var k=0;k<CONFIG.globalUpgrades.length;k++){
+    var g = CONFIG.globalUpgrades[k];
+    var gowned = !!state.globalUpgrades[g.id];
+    u += '<div class="upg"><div class="ico">' + g.ico + '</div>'
+       + '<div class="info"><div class="name">' + g.name + '</div><div class="desc">' + g.desc + '</div></div>'
+       + '<button class="buy' + (gowned?' owned':'') + '" data-global="' + g.id + '" ' + (gowned?'data-owned="1"':'data-cost="' + g.cost + '"') + '>'
+       + (gowned ? '✓ Owned' : fmtFull(g.cost)) + '</button></div>';
+  }
+  up.innerHTML = u;
+
+  // Prestige
+  var g2 = potentialGears();
+  $('gears').textContent = state.gears;
+  $('gearBonus').textContent = '+' + Math.round(state.gears * CONFIG.prestige.bonusPerGear * 100) + '%';
+  var pb = $('prestigeBtn');
+  if(g2 > 0){
+    pb.classList.remove('disabled');
+    pb.textContent = 'Prestige for +' + g2 + ' 🎡 (P)';
+    $('prestigeInfo').innerHTML = 'Ready! Reset progress for <b>' + g2 + '</b> Golden Gears';
+  }else{
+    pb.classList.add('disabled');
+    pb.textContent = 'Prestige (P)';
+    $('prestigeInfo').innerHTML = 'Earn <b>' + fmt(CONFIG.prestige.threshold) + '</b> lifetime to prestige';
+  }
+
+  // Achievements
+  var ach = $('achievements'), a2 = '', count = 0;
+  for(var m=0;m<CONFIG.achievements.length;m++){
+    var ac = CONFIG.achievements[m];
+    var done = !!state.achievements[ac.id];
+    if(done) count++;
+    a2 += '<div class="ach' + (done?' done':'') + '"><div class="ico">' + ac.ico + '</div>'
+        + '<div class="info"><div class="name">' + ac.name + '</div><div class="desc">' + ac.desc + '</div></div></div>';
+  }
+  ach.innerHTML = a2;
+  $('achCount').textContent = count;
+
+  updateBuyStates();
+}
+
+/* ============================================================
+   TOASTS
+   ============================================================ */
+function toast(icon, msg){
+  var box = $('toasts');
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = '<span class="a">' + icon + '</span>' + msg;
+  box.appendChild(t);
+  setTimeout(function(){ t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2500);
+  setTimeout(function(){ t.remove(); }, 2900);
+}
+
+/* ============================================================
+   MODALS (welcome back / confirm)
+   ============================================================ */
+function showModal(html){
+  $('modal').innerHTML = html;
+  $('modalBack').classList.remove('hidden');
+}
+function hideModal(){ $('modalBack').classList.add('hidden'); }
+
+/* ============================================================
+   OFFLINE PROGRESS
+   ============================================================ */
+function applyOfflineProgress(){
+  var elapsed = Math.min((Date.now() - state.lastSaved) / 1000, CONFIG.offlineCapSeconds);
+  if(elapsed <= 30) return; // ignore very short gaps
+  var inc = incomePerSec();
+  if(inc <= 0) return;
+  var earned = inc * elapsed;
+  state.coins += earned;
+  state.lifetime += earned;
+  var mins = Math.round(elapsed / 60);
+  showModal(
+    '<h2>👋 Welcome back!</h2>'
+    + '<p>While you were away (' + mins + ' min), your factory earned you:</p>'
+    + '<div class="bonus">+' + fmtFull(earned) + ' coins</div>'
+    + '<div class="btns"><button class="ok" id="wbOk">Collect</button></div>'
+  );
+  $('wbOk').addEventListener('click', hideModal);
+  checkEarnAch();
+}
+
+/* ============================================================
+   EVENT WIRING
+   ============================================================ */
+function bindEvents(){
+  // Produce button: pointer events (works for mouse + touch, no double-tap zoom)
+  var p = $('produce');
+  p.addEventListener('pointerdown', function(ev){
+    ev.preventDefault();
+    produce(ev);
+  });
+
+  // Shop / upgrade buttons (event delegation)
+  $('shop').addEventListener('click', function(ev){
+    var btn = ev.target.closest('[data-buy]');
+    if(!btn) return;
+    var id = btn.getAttribute('data-buy');
+    var b = CONFIG.buildings.find(function(x){ return x.id === id; });
+    if(b) buyBuilding(b);
+  });
+  $('upgrades').addEventListener('click', function(ev){
+    var btn = ev.target.closest('[data-tap]');
+    if(btn){
+      var t = CONFIG.tapUpgrades.find(function(x){ return x.id === btn.getAttribute('data-tap'); });
+      if(t) buyTap(t);
+      return;
+    }
+    var gbtn = ev.target.closest('[data-global]');
+    if(gbtn){
+      var g = CONFIG.globalUpgrades.find(function(x){ return x.id === gbtn.getAttribute('data-global'); });
+      if(g) buyGlobal(g);
+    }
+  });
+
+  $('prestigeBtn').addEventListener('click', function(){
+    if(potentialGears() <= 0) return;
+    showModal(
+      '<h2>👑 Prestige?</h2>'
+      + '<p>Reset all buildings & upgrades for <b>' + potentialGears() + '</b> Golden Gears'
+      + ' (+' + Math.round(potentialGears()*CONFIG.prestige.bonusPerGear*100) + '% income each).</p>'
+      + '<div class="btns"><button class="ok" id="pOk">Yes, prestige</button><button class="no" id="pNo">Cancel</button></div>'
+    );
+    $('pOk').addEventListener('click', function(){ hideModal(); doPrestige(); });
+    $('pNo').addEventListener('click', hideModal);
+  });
+
+  $('resetBtn').addEventListener('click', function(){
+    showModal(
+      '<h2>🗑️ Reset?</h2>'
+      + '<p>This permanently erases ALL progress (coins, buildings, upgrades, gears, achievements).</p>'
+      + '<div class="btns"><button class="ok" id="rOk">Yes, reset</button><button class="no" id="rNo">Cancel</button></div>'
+    );
+    $('rOk').addEventListener('click', function(){ hideModal(); doReset(); });
+    $('rNo').addEventListener('click', hideModal);
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', function(ev){
+    if(ev.repeat) return;
+    var tag = (document.activeElement && document.activeElement.tagName) || '';
+    if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if(ev.code === 'Space' || ev.code === 'Enter'){
+      ev.preventDefault();
+      produce(null);
+    }else if(ev.key === 'u' || ev.key === 'U'){
+      $('upgradePanel').scrollIntoView({behavior:'smooth'});
+    }else if(ev.key === 'p' || ev.key === 'P'){
+      if(potentialGears() > 0) $('prestigeBtn').click();
+    }else{
+      var n = parseInt(ev.key, 10);
+      if(n >= 1 && n <= CONFIG.buildings.length){
+        buyBuilding(CONFIG.buildings[n-1]);
+      }
+    }
+  });
+
+  // Save on hide / close / visibility change
+  window.addEventListener('pagehide', save);
+  window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'hidden') save();
+  });
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+load();
+rebuild();
+applyOfflineProgress();
+bindEvents();
+save();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
